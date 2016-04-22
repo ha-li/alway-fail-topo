@@ -3,6 +3,7 @@ package com.gecko.topo;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
+import com.gecko.topo.bolts.FailureBolt;
 import com.gecko.topo.spouts.FailureSpout;
 
 /**
@@ -13,6 +14,7 @@ public class FailTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
         builder.setSpout("count-spout", new FailureSpout());
+        builder.setBolt("fail-bolt", new FailureBolt()).shuffleGrouping("count-spout");
 
         Config config = new Config();
         config.setDebug(true);
