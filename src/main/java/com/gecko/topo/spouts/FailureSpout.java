@@ -9,6 +9,9 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,6 +21,10 @@ public class FailureSpout extends BaseRichSpout {
 
     private SpoutOutputCollector spoutCollector;
     private Long transactionCount;
+    private Map<Long, Long> errorCount;
+    private List<Long> messages;
+    private static int MAX_FAILURE = 3;
+
 
     @Override
     public void ack(Object msgId) {
@@ -26,19 +33,42 @@ public class FailureSpout extends BaseRichSpout {
 
     public void fail(Object msgId) {
         System.out.println("Tuple failed: " + msgId);
+        Long id = (Long) msgId;
+        if(errorCount.containsKey(id)) {
+            Long newCount = errorCount.get(msgId) + 1;
+            System.out.println("Tuple has failed " + newCount + " times.");
+            if(newCount >= MAX_FAILURE) {
+                throw new RuntimeException("Too many failures");
+            }
+        } else {
+            System.out.println("First time tuple has failed. ");
+            errorCount.put(id, Long.valueOf(1));
+        }
+
+        messages.add(id);
     }
 
     @Override
     public void nextTuple(){
-        for(int i = 0; i < transactionCount; i++) {
-            spoutCollector.emit(new Values(i), i);
+
+        if( ! messages.isEmpty() ) {
+            for (Long message : messages) {
+                spoutCollector.emit(new Values(message), message);
+                //messages.remove((Object)message);
+            }
         }
+        messages.clear();
     }
 
     @Override
     public void open(Map config, TopologyContext context, SpoutOutputCollector outputCollector) {
         this.transactionCount = (Long) config.get("num-transactions");
         this.spoutCollector = outputCollector;
+        errorCount = new HashMap<Long, Long>();
+        messages = new ArrayList<Long>();
+        for(int i = 0; i < transactionCount; i++) {
+            messages.add(Long.valueOf(i));
+        }
     }
 
     @Override
