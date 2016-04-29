@@ -13,7 +13,7 @@ public class FailTopology {
     public static void main(String[] args) throws InterruptedException {
 
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout("count-spout", new FailureSpout());
+        builder.setSpout("count-spout", new FailureSpout());//.setMaxTaskParallelism(4);
         builder.setBolt("fail-bolt", new FailureBolt()).shuffleGrouping("count-spout");
 
         Config config = new Config();

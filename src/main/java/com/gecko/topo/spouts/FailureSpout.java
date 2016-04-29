@@ -37,6 +37,8 @@ public class FailureSpout extends BaseRichSpout {
         if(errorCount.containsKey(id)) {
             Long newCount = errorCount.get(msgId) + 1;
             System.out.println("Tuple has failed " + newCount + " times.");
+
+            // when we exceed the max count, throw a run time e
             if(newCount >= MAX_FAILURE) {
                 throw new RuntimeException("Too many failures");
             }
@@ -45,6 +47,7 @@ public class FailureSpout extends BaseRichSpout {
             errorCount.put(id, Long.valueOf(1));
         }
 
+        // each failed needs to be added back to the messages queue
         messages.add(id);
     }
 
@@ -62,6 +65,9 @@ public class FailureSpout extends BaseRichSpout {
 
     @Override
     public void open(Map config, TopologyContext context, SpoutOutputCollector outputCollector) {
+        //int spoutSize = context.getComponentTasks(context.getThisComponentId()).size();
+        //System.out.println("spout size: " + spoutSize);
+
         this.transactionCount = (Long) config.get("num-transactions");
         this.spoutCollector = outputCollector;
         errorCount = new HashMap<Long, Long>();
